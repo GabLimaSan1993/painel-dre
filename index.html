@@ -7,16 +7,27 @@
  --text:#f3f1ea;--muted:#8c9aa3;--line:#36454f;--pos:#3fb47e;--neg:#d98a5b;
  --fdisplay:'Sora',sans-serif;--fbody:'Manrope',sans-serif;}
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--text);font-family:var(--fbody);padding:28px 20px}
-.wrap{max-width:1180px;margin:0 auto}
+body{background:var(--bg);color:var(--text);font-family:var(--fbody)}
+.wrap{max-width:1180px;margin:0 auto;padding:28px 20px}
+#login{display:none;min-height:100vh;align-items:center;justify-content:center;padding:20px}
+.loginbox{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:40px;width:100%;max-width:380px}
+.loginbox .eyebrow{color:var(--gold);font-size:12px;font-weight:600;letter-spacing:.22em;text-transform:uppercase}
+.loginbox h2{font-family:var(--fdisplay);font-size:24px;font-weight:700;margin:6px 0 24px}
+.loginbox label{display:block;color:var(--muted);font-size:12px;font-weight:600;margin:14px 0 6px;text-transform:uppercase;letter-spacing:.08em}
+.loginbox input{width:100%;background:var(--bg);border:1px solid var(--line);color:var(--text);padding:12px 14px;border-radius:10px;font-family:var(--fbody);font-size:15px}
+.loginbox input:focus{outline:none;border-color:var(--gold)}
+.loginbox button{width:100%;margin-top:22px;background:var(--gold);color:#1d272e;border:none;padding:13px;border-radius:10px;font-family:var(--fbody);font-weight:700;font-size:15px;cursor:pointer}
+.loginbox .err{color:var(--neg);font-size:13px;margin-top:14px;min-height:18px;text-align:center}
+#app{display:none}
 .top{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:16px}
 .eyebrow{color:var(--gold);font-size:12px;font-weight:600;letter-spacing:.22em;text-transform:uppercase}
 h1{font-family:var(--fdisplay);font-size:32px;font-weight:700;margin-top:4px}
 .sub{color:var(--muted);font-size:14px;margin-top:6px}
+.controls{display:flex;align-items:flex-end;gap:12px}
 .fld{display:flex;flex-direction:column;gap:5px}
 .fld span{color:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em}
-select{appearance:none;background:var(--surface);color:var(--text);border:1px solid var(--line);
- padding:10px 16px;border-radius:12px;font-family:var(--fbody);font-weight:500;font-size:14px;min-width:260px;cursor:pointer}
+select{appearance:none;background:var(--surface);color:var(--text);border:1px solid var(--line);padding:10px 16px;border-radius:12px;font-family:var(--fbody);font-weight:500;font-size:14px;min-width:240px;cursor:pointer}
+.logout{background:transparent;color:var(--muted);border:1px solid var(--line);padding:10px 14px;border-radius:12px;font-family:var(--fbody);font-size:13px;cursor:pointer}
 .months{display:flex;gap:8px;flex-wrap:wrap;margin:24px 0}
 .mbtn{background:var(--surface);color:var(--text);border:1px solid var(--line);padding:9px 20px;border-radius:999px;font-family:var(--fbody);font-weight:600;font-size:14px;cursor:pointer}
 .mbtn.active{background:var(--gold);color:#1d272e;border-color:var(--gold)}
@@ -43,28 +54,60 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 .loading{color:var(--muted);padding:20px;text-align:center}
 .sec-title{color:var(--gold);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;margin:18px 0 8px}
 </style></head>
-<body><div class="wrap">
+<body>
+<div id="login"><div class="loginbox">
+  <div class="eyebrow">Emballerge · DRE Gerencial</div>
+  <h2>Acesso ao painel</h2>
+  <label>Email</label><input id="email" type="email" autocomplete="username" placeholder="seu@email.com">
+  <label>Senha</label><input id="senha" type="password" autocomplete="current-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')login()">
+  <button onclick="login()">Entrar</button>
+  <div class="err" id="loginErr"></div>
+</div></div>
+<div id="app"><div class="wrap">
 <div class="top">
   <div><div class="eyebrow">Emballerge · DRE Gerencial</div>
   <h1>DRE por Operação — Shopee</h1>
   <div class="sub" id="escopo">Todas as unidades · clique num cartão para detalhar</div></div>
-  <label class="fld"><span>Unidade / CNPJ</span><select id="cnpjSel" onchange="setCnpj(this.value)"></select></label>
+  <div class="controls">
+    <label class="fld"><span>Unidade / CNPJ</span><select id="cnpjSel" onchange="setCnpj(this.value)"></select></label>
+    <button class="logout" onclick="logout()">Sair</button>
+  </div>
 </div>
 <div class="months" id="months"></div>
 <div class="cards" id="cards"></div>
 <div id="detalhe"></div>
-</div>
+</div></div>
 <script>
 const URL="https://ksmtbrgnchlvzabaspev.supabase.co";
 const KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtzbXRicmduY2hsdnphYmFzcGV2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3NzYxNzMsImV4cCI6MjA5NjM1MjE3M30.8mKuwcxBJH2F4FbFn_dHfC-Ll9wXNgtJUUSOuljYNIQ";
 const MESES=[["Jan",1],["Fev",2],["Mar",3],["Abr",4],["Mai",5]];
 let mesSel=1, cnpjSel="TODOS", cardSel=null;
+let TOKEN=localStorage.getItem("sb_token")||null;
 const fmtMi=v=>"R$ "+((Number(v)||0)/1e6).toFixed(2)+" mi";
 const fmt=v=>"R$ "+(Number(v)||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2});
 const n2=v=>(Number(v)||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2});
 const enc=encodeURIComponent;
-async function api(path){const r=await fetch(URL+"/rest/v1/"+path,{headers:{apikey:KEY,Authorization:"Bearer "+KEY}});return r.json();}
+async function api(path){
+  const r=await fetch(URL+"/rest/v1/"+path,{headers:{apikey:KEY,Authorization:"Bearer "+(TOKEN||KEY)}});
+  if(r.status===401){logout();throw new Error("Sessão expirada — faça login de novo.");}
+  return r.json();
+}
 const fcnpj=()=>cnpjSel==="TODOS"?"":`&cnpj=eq.${enc(cnpjSel)}`;
+function showLogin(){document.getElementById("login").style.display="flex";document.getElementById("app").style.display="none";}
+function showApp(){document.getElementById("login").style.display="none";document.getElementById("app").style.display="block";}
+async function login(){
+  const email=document.getElementById("email").value.trim();
+  const senha=document.getElementById("senha").value;
+  const err=document.getElementById("loginErr");err.textContent="Entrando…";
+  try{
+    const r=await fetch(URL+"/auth/v1/token?grant_type=password",{method:"POST",
+      headers:{apikey:KEY,"Content-Type":"application/json"},body:JSON.stringify({email,password:senha})});
+    const d=await r.json();
+    if(d.access_token){TOKEN=d.access_token;localStorage.setItem("sb_token",TOKEN);err.textContent="";showApp();init();}
+    else{err.textContent=d.error_description||d.msg||"Email ou senha inválidos.";}
+  }catch(e){err.textContent="Erro de conexão: "+e.message;}
+}
+function logout(){TOKEN=null;localStorage.removeItem("sb_token");document.getElementById("detalhe").innerHTML="";showLogin();}
 async function carregarUnidades(){
   const u=await api("v_unidades?select=cnpj,cidade,estado&order=cidade");
   document.getElementById("cnpjSel").innerHTML='<option value="TODOS">Todas as unidades</option>'+
@@ -129,5 +172,6 @@ function panel(t,sub,inner){return `<div class="panel"><h3>${t}</h3><div class="
 function tabela(cols,rows,numCols){numCols=numCols||[];
   return `<div class="scroll"><table><thead><tr>${cols.map((c,i)=>`<th class="${numCols.includes(i)?'num':''}">${c}</th>`).join("")}</tr></thead>
   <tbody>${rows.map(r=>`<tr>${r.map((v,i)=>`<td class="${numCols.includes(i)?'num':''}">${v}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;}
-(async()=>{await carregarUnidades();renderMonths();loadDRE();})();
+function init(){carregarUnidades();renderMonths();loadDRE();}
+if(TOKEN){showApp();init();}else{showLogin();}
 </script></body></html>
