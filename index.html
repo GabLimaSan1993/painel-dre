@@ -122,7 +122,7 @@ td.click:hover{background:rgba(226,165,38,.12);color:var(--gold-soft)}
   </div>
   <div class="mapwrap">
     <div class="mapbox">
-      <svg id="mapsvg" viewBox="0 0 760 760" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto">__PATHS__<g id="uflabels"></g></svg>
+      <svg id="mapsvg" viewBox="0 0 760 760" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto"></svg>
       <div class="legend"><span>menor</span><div class="legbar"></div><span>maior</span></div>
     </div>
     <div class="rank"><h3 id="rankTitle">Ranking por estado</h3><div id="rankList"></div></div>
@@ -130,6 +130,7 @@ td.click:hover{background:rgba(226,165,38,.12);color:var(--gold-soft)}
 </div>
 <div class="tip" id="tip"></div>
 </div></div>
+<script src="mapa.js"></script>
 <script>
 const URL="https://ksmtbrgnchlvzabaspev.supabase.co";
 const KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtzbXRicmduY2hsdnphYmFzcGV2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3NzYxNzMsImV4cCI6MjA5NjM1MjE3M30.8mKuwcxBJH2F4FbFn_dHfC-Ll9wXNgtJUUSOuljYNIQ";
@@ -262,7 +263,6 @@ function panel(t,sub,inner){return `<div class="panel"><h3>${t}</h3><div class="
 function tabela(cols,rows,numCols){numCols=numCols||[];
   return `<div class="scroll"><table class="dtl"><thead><tr>${cols.map((c,i)=>`<th class="${numCols.includes(i)?'num':''}">${c}</th>`).join("")}</tr></thead>
   <tbody>${rows.map(r=>`<tr>${r.map((v,i)=>`<td class="${numCols.includes(i)?'num':''}">${v}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;}
-const CENT={"AC":[83,243],"AL":[663,317],"AP":[400,90],"AM":[170,153],"BA":[586,343],"CE":[604,224],"DF":[512,400],"ES":[612,470],"GO":[486,420],"MA":[530,210],"MT":[400,380],"MS":[400,490],"MG":[546,460],"PA":[400,200],"PB":[657,280],"PR":[450,580],"PE":[630,290],"PI":[560,260],"RJ":[575,510],"RN":[660,250],"RS":[393,691],"RO":[250,310],"RR":[230,70],"SC":[450,630],"SP":[480,539],"SE":[665,335],"TO":[490,300]};
 const METRICAS={receita:"Faturamento",lucro_operacional:"Lucro Operacional",margem:"Margem Operacional %",cmv:"Consumo de MP (CMV)",frete:"Frete"};
 let mapaCarregado=false;
 function setTab(t){
@@ -274,6 +274,8 @@ function setTab(t){
 }
 function corHeat(t){const a=[46,60,70],b=[226,165,38];const c=a.map((v,i)=>Math.round(v+(b[i]-v)*t));return `rgb(${c[0]},${c[1]},${c[2]})`;}
 async function loadMapa(){
+  const svg=document.getElementById("mapsvg");
+  if(!svg.querySelector("path")) svg.innerHTML=window.BR_PATHS+'<g id="uflabels"></g>';
   const metric=document.getElementById("metricSel").value;
   const mes=parseInt(document.getElementById("mapMesSel").value);
   const rows=await api(`v_mapa_estado?ano=eq.2026&select=estado,mes,receita,deducoes,cmv,credito,lucro_operacional,frete`);
@@ -295,8 +297,8 @@ async function loadMapa(){
       tip.innerHTML=`<b>${uf}</b> · ${METRICAS[metric]}<br>${metric==="margem"?v.toFixed(1)+"%":fmt(v)}`;};
     p.onmouseleave=()=>{document.getElementById("tip").style.opacity=0;};
   });
-  document.getElementById("uflabels").innerHTML=Object.keys(CENT).map(uf=>
-    `<text class="uflabel" x="${CENT[uf][0]}" y="${CENT[uf][1]}" text-anchor="middle">${uf}</text>`).join("");
+  document.getElementById("uflabels").innerHTML=Object.keys(window.BR_CENT).map(uf=>
+    `<text class="uflabel" x="${window.BR_CENT[uf][0]}" y="${window.BR_CENT[uf][1]}" text-anchor="middle">${uf}</text>`).join("");
   document.getElementById("rankTitle").textContent="Ranking · "+METRICAS[metric];
   const ord=Object.keys(dados).sort((a,b)=>dados[b]-dados[a]);
   const top=dados[ord[0]]||1;
