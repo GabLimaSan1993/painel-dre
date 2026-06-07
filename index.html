@@ -172,10 +172,15 @@ async function abrir(tipo,mes){
       const cview=cnpjSel==="TODOS"?"v_consumo_prd":"v_consumo_cnpj";
       const c=await api(`${cview}?ano=eq.2026&mes=eq.${mes}${F}&select=produto,insumo,qtd_consumida,custo_total&order=produto`);
       const e=await api(`v_entrada_detalhe?ano=eq.2026&mes=eq.${mes}&select=numero_nf,fornecedor,insumo,quantidade,valor_total,custo_unit&order=valor_total.desc`);
+      const byIns={};
+      c.forEach(x=>{const k=x.insumo;if(!byIns[k])byIns[k]={insumo:k,qtd:0,custo:0};byIns[k].qtd+=Number(x.qtd_consumida)||0;byIns[k].custo+=Number(x.custo_total)||0;});
+      const cons=Object.values(byIns).sort((a,b)=>b.custo-a.custo);
       det.innerHTML='<div class="panel"><h3>CMV — custo do que foi vendido · '+mnome+'</h3><div class="ph">Consumo da unidade · NFs de entrada são da fábrica (formam o custo médio)</div>'
-        +'<div class="sec-title">1 · Consumo por produto</div>'
+        +'<div class="sec-title">1 · Consolidado por insumo (PN)</div>'
+        +tabela(["Insumo","Qtd consumida","Custo unit (período)","Custo total"],cons.map(x=>[x.insumo,n2(x.qtd),x.qtd?fmt(x.custo/x.qtd):"—",fmt(x.custo)]),[1,2,3])
+        +'<div class="sec-title">2 · Consumo por produto</div>'
         +tabela(["Produto","Insumo","Qtd consumida","Custo"],c.map(x=>[x.produto,x.insumo,n2(x.qtd_consumida),fmt(x.custo_total)]),[2,3])
-        +`<div class="sec-title">2 · NFs de entrada que formaram o custo (${e.length} notas)</div>`
+        +`<div class="sec-title">3 · NFs de entrada que formaram o custo (${e.length} notas)</div>`
         +tabela(["NF","Fornecedor","Insumo","Qtd","Valor","Custo/un"],e.map(x=>[x.numero_nf,x.fornecedor,x.insumo,n2(x.quantidade),fmt(x.valor_total),fmt(x.custo_unit)]),[3,4,5])+'</div>';
     }
     document.getElementById("detalhe").scrollIntoView({behavior:"smooth",block:"nearest"});
