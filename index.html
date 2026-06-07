@@ -118,8 +118,10 @@ const LINHAS=[
  {lbl:"(+) Crédito de Impostos",tipo:"credito",calc:d=>d.credito_impostos,cls:"r-pos"},
  {lbl:"(=) Receita Líquida",calc:d=>d.receita_bruta-ded(d)+(d.credito_impostos||0),cls:"r-sub"},
  {lbl:"(−) CMV",tipo:"cmv",calc:d=>-d.cmv,cls:"r-neg"},
- {lbl:"(=) Lucro Bruto",calc:d=>d.lucro_bruto_ajustado,cls:"r-total"},
- {lbl:"Margem %",calc:d=>d.receita_bruta?d.lucro_bruto_ajustado/d.receita_bruta*100:0,cls:"r-memo",pct:1},
+ {lbl:"(=) Lucro Bruto",calc:d=>d.lucro_bruto_ajustado,cls:"r-sub"},
+ {lbl:"(−) Frete",tipo:"frete",calc:d=>-(d.frete||0),cls:"r-neg"},
+ {lbl:"(=) Lucro Operacional",calc:d=>d.lucro_operacional,cls:"r-total"},
+ {lbl:"Margem Operacional %",calc:d=>d.receita_bruta?d.lucro_operacional/d.receita_bruta*100:0,cls:"r-memo",pct:1},
  {lbl:"ICMS a Recuperar (fora do resultado)",calc:d=>d.icms_a_recuperar,cls:"r-memo"},
 ];
 async function loadDRE(){
@@ -193,6 +195,11 @@ async function abrir(tipo,mes){
         +'<div class="sec-title">2 · Consumo por produto</div>'+s2
         +`<div class="sec-title">3 · NFs de entrada que formaram o custo (${e.length} notas)</div>`
         +tabela(["NF","Fornecedor","Insumo","Qtd","Valor","Custo/un"],e.map(x=>[x.numero_nf,x.fornecedor,x.insumo,n2(x.quantidade),fmt(x.valor_total),fmt(x.custo_unit)]),[3,4,5])+'</div>';
+    } else if(tipo==="frete"){
+      const r=await api(`v_frete_detalhe?ano=eq.2026&mes=eq.${mes}&select=estado,produto,valor_frete&order=valor_frete.desc`);
+      const sub=cnpjSel==="TODOS"?`${r.length} trechos (por estado/produto)`:"Frete total da operação por estado/produto · o cartão mostra a parte rateada desta unidade";
+      det.innerHTML=panel("Frete · "+mnome,sub,
+        tabela(["Estado","Produto","Frete"],r.map(x=>[x.estado,x.produto,fmt(x.valor_frete)]),[2]));
     }
     document.getElementById("detalhe").scrollIntoView({behavior:"smooth",block:"nearest"});
   }catch(err){det.innerHTML='<div class="panel"><div class="loading">Erro ao buscar: '+err.message+'</div></div>';}
