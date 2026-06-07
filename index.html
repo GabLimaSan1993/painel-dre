@@ -52,6 +52,9 @@ td.click:hover{background:rgba(226,165,38,.12);color:var(--gold-soft)}
 .dtl td{padding:8px 10px;border-bottom:1px solid rgba(54,69,79,.5)}
 .dtl td.num,.dtl th.num{text-align:right;font-variant-numeric:tabular-nums}
 .dtl tr.subtot td{font-weight:700;color:var(--gold-soft);border-top:1px solid var(--gold)}
+.r-grouphdr td{border-top:1px solid var(--line);font-weight:600}
+.r-subitem td{font-size:13px;color:var(--muted)}
+.r-subitem td.acc{padding-left:34px}
 .scroll{max-height:380px;overflow:auto}
 .loading{color:var(--muted);padding:20px;text-align:center}
 .sec-title{color:var(--gold);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;margin:18px 0 8px}
@@ -119,7 +122,8 @@ const LINHAS=[
  {lbl:"(=) Receita Líquida",calc:d=>d.receita_bruta-ded(d)+(d.credito_impostos||0),cls:"r-sub"},
  {lbl:"(−) CMV",tipo:"cmv",calc:d=>-d.cmv,cls:"r-neg"},
  {lbl:"(=) Lucro Bruto",calc:d=>d.lucro_bruto_ajustado,cls:"r-sub"},
- {lbl:"(−) Frete",tipo:"frete",calc:d=>-(d.frete||0),cls:"r-neg"},
+ {lbl:"(−) Custos Operacionais",calc:d=>-(d.frete||0),cls:"r-grouphdr"},
+ {lbl:"Frete",tipo:"frete",calc:d=>-(d.frete||0),cls:"r-subitem"},
  {lbl:"(=) Lucro Operacional",calc:d=>d.lucro_operacional,cls:"r-total"},
  {lbl:"Margem Operacional %",calc:d=>d.receita_bruta?d.lucro_operacional/d.receita_bruta*100:0,cls:"r-memo",pct:1},
  {lbl:"ICMS a Recuperar (fora do resultado)",calc:d=>d.icms_a_recuperar,cls:"r-memo"},
