@@ -153,9 +153,12 @@ async function abrir(tipo,mes){
   const F=fcnpj(), mnome=MESES.find(m=>m[1]===mes)[0]+"/2026";
   try{
     if(tipo==="receita"){
-      const r=await api(`v_venda_detalhe?ano=eq.2026&mes=eq.${mes}${F}&select=numero_nf,produto,cidade,quantidade,valor_unit,valor_total&order=valor_total.desc`);
+      const r=await api(`v_venda_detalhe?ano=eq.2026&mes=eq.${mes}${F}&select=numero_nf,produto,cidade,quantidade,valor_unit,custo_unit,valor_total&order=valor_total.desc`);
       det.innerHTML=panel("Receita — NFs de saída · "+mnome,`${r.length} notas`,
-        tabela(["NF","Produto","Cidade","Qtd","Vlr Unit","Total"],r.map(x=>[x.numero_nf,x.produto,x.cidade,n2(x.quantidade),fmt(x.valor_unit),fmt(x.valor_total)]),[3,4,5]));
+        tabela(["NF","Produto","Cidade","Qtd","Vlr Unit","Custo Unit","Margem","Total"],
+          r.map(x=>{const mg=x.valor_unit?((x.valor_unit-x.custo_unit)/x.valor_unit*100):0;
+            return [x.numero_nf,x.produto,x.cidade,n2(x.quantidade),fmt(x.valor_unit),fmt(x.custo_unit),mg.toFixed(1)+"%",fmt(x.valor_total)];}),
+          [3,4,5,6,7]));
     } else if(tipo==="impostos"){
       const r=await api(`v_venda_detalhe?ano=eq.2026&mes=eq.${mes}${F}&select=numero_nf,produto,vlr_icms,vlr_pis,vlr_cofins&order=numero_nf`);
       det.innerHTML=panel("Impostos deduzidos por nota · "+mnome,"ICMS + PIS + COFINS",
