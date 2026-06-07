@@ -51,6 +51,7 @@ td.click:hover{background:rgba(226,165,38,.12);color:var(--gold-soft)}
 .dtl th{text-align:left;color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.06em;padding:8px 10px;border-bottom:1px solid var(--line)}
 .dtl td{padding:8px 10px;border-bottom:1px solid rgba(54,69,79,.5)}
 .dtl td.num,.dtl th.num{text-align:right;font-variant-numeric:tabular-nums}
+.dtl tr.subtot td{font-weight:700;color:var(--gold-soft);border-top:1px solid var(--gold)}
 .scroll{max-height:380px;overflow:auto}
 .loading{color:var(--muted);padding:20px;text-align:center}
 .sec-title{color:var(--gold);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;margin:18px 0 8px}
@@ -170,16 +171,26 @@ async function abrir(tipo,mes){
         tabela(["Insumo","Crédito alocado"],r.map(x=>[x.insumo,fmt(x.credito_alocado)]),[1]));
     } else if(tipo==="cmv"){
       const cview=cnpjSel==="TODOS"?"v_consumo_prd":"v_consumo_cnpj";
-      const c=await api(`${cview}?ano=eq.2026&mes=eq.${mes}${F}&select=produto,insumo,qtd_consumida,custo_total&order=produto`);
+      const c=await api(`${cview}?ano=eq.2026&mes=eq.${mes}${F}&select=prd,produto,insumo,qtd_consumida,custo_total&order=produto`);
+      const cmuRows=await api(`v_cmu_prd?ano=eq.2026&mes=eq.${mes}&select=prd,cmu`);
       const e=await api(`v_entrada_detalhe?ano=eq.2026&mes=eq.${mes}&select=numero_nf,fornecedor,insumo,quantidade,valor_total,custo_unit&order=valor_total.desc`);
+      const cmuMap={}; cmuRows.forEach(x=>cmuMap[x.prd]=x.cmu);
       const byIns={};
       c.forEach(x=>{const k=x.insumo;if(!byIns[k])byIns[k]={insumo:k,qtd:0,custo:0};byIns[k].qtd+=Number(x.qtd_consumida)||0;byIns[k].custo+=Number(x.custo_total)||0;});
       const cons=Object.values(byIns).sort((a,b)=>b.custo-a.custo);
+      const byPrd={};
+      c.forEach(x=>{const k=x.produto;if(!byPrd[k])byPrd[k]={produto:k,prd:x.prd,rows:[],total:0};byPrd[k].rows.push(x);byPrd[k].total+=Number(x.custo_total)||0;});
+      let s2='<div class="scroll"><table class="dtl"><thead><tr><th>Produto</th><th>Insumo</th><th class="num">Qtd consumida</th><th class="num">Custo</th></tr></thead><tbody>';
+      Object.values(byPrd).forEach(g=>{
+        g.rows.forEach(x=>{s2+=`<tr><td>${g.produto}</td><td>${x.insumo}</td><td class="num">${n2(x.qtd_consumida)}</td><td class="num">${fmt(x.custo_total)}</td></tr>`;});
+        const cmu=cmuMap[g.prd];
+        s2+=`<tr class="subtot"><td colspan="2">Total ${g.produto} · CMU ${cmu!=null?fmt(cmu):"—"}</td><td class="num">—</td><td class="num">${fmt(g.total)}</td></tr>`;
+      });
+      s2+='</tbody></table></div>';
       det.innerHTML='<div class="panel"><h3>CMV — custo do que foi vendido · '+mnome+'</h3><div class="ph">Consumo da unidade · NFs de entrada são da fábrica (formam o custo médio)</div>'
         +'<div class="sec-title">1 · Consolidado por insumo (PN)</div>'
         +tabela(["Insumo","Qtd consumida","Custo unit (período)","Custo total"],cons.map(x=>[x.insumo,n2(x.qtd),x.qtd?fmt(x.custo/x.qtd):"—",fmt(x.custo)]),[1,2,3])
-        +'<div class="sec-title">2 · Consumo por produto</div>'
-        +tabela(["Produto","Insumo","Qtd consumida","Custo"],c.map(x=>[x.produto,x.insumo,n2(x.qtd_consumida),fmt(x.custo_total)]),[2,3])
+        +'<div class="sec-title">2 · Consumo por produto</div>'+s2
         +`<div class="sec-title">3 · NFs de entrada que formaram o custo (${e.length} notas)</div>`
         +tabela(["NF","Fornecedor","Insumo","Qtd","Valor","Custo/un"],e.map(x=>[x.numero_nf,x.fornecedor,x.insumo,n2(x.quantidade),fmt(x.valor_total),fmt(x.custo_unit)]),[3,4,5])+'</div>';
     }
