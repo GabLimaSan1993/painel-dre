@@ -1,1 +1,113 @@
-
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DRE Shopee — Emballerge</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&family=Manrope:wght@400;500;600&display=swap');
+:root{--bg:#1d272e;--surface:#26323b;--surface2:#2e3c46;--gold:#e2a526;--gold-soft:#f0c469;
+ --text:#f3f1ea;--muted:#8c9aa3;--line:#36454f;--pos:#3fb47e;--neg:#d98a5b;
+ --fdisplay:'Sora',sans-serif;--fbody:'Manrope',sans-serif;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--fbody);padding:28px 20px}
+.wrap{max-width:1180px;margin:0 auto}
+.eyebrow{color:var(--gold);font-size:12px;font-weight:600;letter-spacing:.22em;text-transform:uppercase}
+h1{font-family:var(--fdisplay);font-size:32px;font-weight:700;margin-top:4px}
+.sub{color:var(--muted);font-size:14px;margin-top:6px}
+.months{display:flex;gap:8px;flex-wrap:wrap;margin:24px 0}
+.mbtn{background:var(--surface);color:var(--text);border:1px solid var(--line);padding:9px 20px;border-radius:999px;font-family:var(--fbody);font-weight:600;font-size:14px;cursor:pointer}
+.mbtn.active{background:var(--gold);color:#1d272e;border-color:var(--gold)}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+@media(max-width:760px){.cards{grid-template-columns:repeat(2,1fr)}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px;transition:.15s}
+.card.click{cursor:pointer}.card.click:hover{border-color:var(--gold);transform:translateY(-2px)}
+.card.hl{background:linear-gradient(160deg,#2e3c46,#26323b);border-color:var(--gold)}
+.card.active{border-color:var(--gold);box-shadow:0 0 0 2px rgba(226,165,38,.3)}
+.card.info{border-style:dashed;background:transparent}
+.card .lbl{color:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em}
+.card .val{font-family:var(--fdisplay);font-size:26px;font-weight:700;margin-top:8px}
+.card.hl .val{color:var(--gold-soft)}
+.card.info .val{color:var(--muted)}
+.card .foot{color:var(--muted);font-size:11px;margin-top:3px}
+.card .tag{color:var(--gold);font-size:10px;margin-top:6px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:22px;margin-top:18px}
+.panel h3{font-family:var(--fdisplay);font-size:18px;margin-bottom:4px}
+.panel .ph{color:var(--muted);font-size:12px;margin-bottom:14px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.06em;padding:8px 10px;border-bottom:1px solid var(--line)}
+td{padding:8px 10px;border-bottom:1px solid rgba(54,69,79,.5)}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+.scroll{max-height:380px;overflow:auto}
+.loading{color:var(--muted);padding:20px;text-align:center}
+.sec-title{color:var(--gold);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;margin:18px 0 8px}
+</style></head>
+<body><div class="wrap">
+<div class="eyebrow">Emballerge · DRE Gerencial</div>
+<h1>DRE por Operação — Shopee</h1>
+<div class="sub">Conectado ao banco · clique num cartão para ver o detalhe</div>
+<div class="months" id="months"></div>
+<div class="cards" id="cards"></div>
+<div id="detalhe"></div>
+</div>
+<script>
+const URL="https://ksmtbrgnchlvzabaspev.supabase.co";
+const KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtzbXRicmduY2hsdnphYmFzcGV2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3NzYxNzMsImV4cCI6MjA5NjM1MjE3M30.8mKuwcxBJH2F4FbFn_dHfC-Ll9wXNgtJUUSOuljYNIQ";
+const MESES=[["Jan",1],["Fev",2],["Mar",3],["Abr",4],["Mai",5]];
+let mesSel=1, cardSel=null;
+const fmtMi=v=>"R$ "+((Number(v)||0)/1e6).toFixed(2)+" mi";
+const fmt=v=>"R$ "+(Number(v)||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2});
+const n2=v=>(Number(v)||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2});
+async function api(path){const r=await fetch(URL+"/rest/v1/"+path,{headers:{apikey:KEY,Authorization:"Bearer "+KEY}});return r.json();}
+function renderMonths(){document.getElementById("months").innerHTML=MESES.map(([n,num])=>`<button class="mbtn ${num===mesSel?'active':''}" onclick="setMes(${num})">${n}/26</button>`).join("");}
+async function loadDRE(){
+  document.getElementById("cards").innerHTML='<div class="loading">Carregando…</div>';
+  const d=(await api(`v_dre_operacao?ano=eq.2026&mes=eq.${mesSel}`))[0]||{};
+  const ded=(d.icms||0)+(d.pis||0)+(d.cofins||0);
+  const cards=[
+    {k:"receita",lbl:"Receita Bruta",val:fmtMi(d.receita_bruta),foot:"NFs de saída",click:1},
+    {k:"impostos",lbl:"Impostos Deduzidos",val:fmtMi(ded),foot:"ICMS+PIS+COFINS",click:1},
+    {k:"credito",lbl:"Crédito de Impostos",val:fmtMi(d.credito_impostos),foot:"PIS+COFINS (das entradas)",click:1},
+    {k:"cmv",lbl:"CMV",val:fmtMi(d.cmv),foot:"custo consumido",click:1},
+    {k:"lucro",lbl:"Lucro Bruto Ajustado",val:fmtMi(d.lucro_bruto_ajustado),foot:"após créditos",hl:1},
+    {k:"margem",lbl:"Margem",val:((d.lucro_bruto_ajustado/d.receita_bruta*100)||0).toFixed(1)+"%",foot:"lucro aj. / receita"},
+    {k:"icms",lbl:"ICMS a Recuperar",val:fmtMi(d.icms_a_recuperar),foot:"crédito acumulado · fora do resultado",info:1},
+  ];
+  document.getElementById("cards").innerHTML=cards.map(c=>
+    `<div class="card ${c.click?'click':''} ${c.hl?'hl':''} ${c.info?'info':''} ${cardSel===c.k?'active':''}" ${c.click?`onclick="abrir('${c.k}')"`:''}>
+      <div class="lbl">${c.lbl}</div><div class="val">${c.val}</div><div class="foot">${c.foot}</div>
+      ${c.click?'<div class="tag">▾ clique para detalhar</div>':''}</div>`).join("");
+}
+function setMes(m){mesSel=m;cardSel=null;document.getElementById("detalhe").innerHTML="";renderMonths();loadDRE();}
+async function abrir(tipo){
+  if(cardSel===tipo){cardSel=null;document.getElementById("detalhe").innerHTML="";renderMonths();loadDRE();return;}
+  cardSel=tipo;renderMonths();loadDRE();
+  const det=document.getElementById("detalhe");det.innerHTML='<div class="panel"><div class="loading">Buscando no banco…</div></div>';
+  try{
+    if(tipo==="receita"){
+      const r=await api(`v_venda_detalhe?ano=eq.2026&mes=eq.${mesSel}&select=numero_nf,produto,cidade,quantidade,valor_unit,valor_total&order=valor_total.desc`);
+      det.innerHTML=panel("Receita — NFs de saída",`${r.length} notas em ${nomeMes()}`,
+        tabela(["NF","Produto","Cidade","Qtd","Vlr Unit","Total"],r.map(x=>[x.numero_nf,x.produto,x.cidade,n2(x.quantidade),fmt(x.valor_unit),fmt(x.valor_total)]),[3,4,5]));
+    } else if(tipo==="impostos"){
+      const r=await api(`v_venda_detalhe?ano=eq.2026&mes=eq.${mesSel}&select=numero_nf,produto,vlr_icms,vlr_pis,vlr_cofins&order=numero_nf`);
+      det.innerHTML=panel("Impostos deduzidos por nota","ICMS + PIS + COFINS",
+        tabela(["NF","Produto","ICMS","PIS","COFINS"],r.map(x=>[x.numero_nf,x.produto,fmt(x.vlr_icms),fmt(x.vlr_pis),fmt(x.vlr_cofins)]),[2,3,4]));
+    } else if(tipo==="credito"){
+      const r=await api(`v_credito_detalhe?ano=eq.2026&mes=eq.${mesSel}&select=insumo,credito_alocado&order=credito_alocado.desc`);
+      det.innerHTML=panel("Crédito de impostos por insumo","PIS + COFINS · proporcional ao consumo da Shopee",
+        tabela(["Insumo","Crédito alocado"],r.map(x=>[x.insumo,fmt(x.credito_alocado)]),[1]));
+    } else if(tipo==="cmv"){
+      const c=await api(`v_consumo_prd?ano=eq.2026&mes=eq.${mesSel}&select=produto,insumo,qtd_consumida,custo_total&order=produto`);
+      const e=await api(`v_entrada_detalhe?ano=eq.2026&mes=eq.${mesSel}&select=numero_nf,fornecedor,insumo,quantidade,valor_total,custo_unit&order=valor_total.desc`);
+      det.innerHTML='<div class="panel"><h3>CMV — custo do que foi vendido</h3><div class="ph">Dois níveis: o que cada produto consumiu, e as notas de entrada por trás</div>'
+        +'<div class="sec-title">1 · Consumo por produto</div>'
+        +tabela(["Produto","Insumo","Qtd consumida","Custo"],c.map(x=>[x.produto,x.insumo,n2(x.qtd_consumida),fmt(x.custo_total)]),[2,3])
+        +`<div class="sec-title">2 · NFs de entrada que formaram o custo (${e.length} notas)</div>`
+        +tabela(["NF","Fornecedor","Insumo","Qtd","Valor","Custo/un"],e.map(x=>[x.numero_nf,x.fornecedor,x.insumo,n2(x.quantidade),fmt(x.valor_total),fmt(x.custo_unit)]),[3,4,5])+'</div>';
+    }
+  }catch(err){det.innerHTML='<div class="panel"><div class="loading">Erro ao buscar: '+err.message+'</div></div>';}
+}
+function nomeMes(){return MESES.find(m=>m[1]===mesSel)[0]+"/2026";}
+function panel(t,sub,inner){return `<div class="panel"><h3>${t}</h3><div class="ph">${sub}</div>${inner}</div>`;}
+function tabela(cols,rows,numCols){numCols=numCols||[];
+  return `<div class="scroll"><table><thead><tr>${cols.map((c,i)=>`<th class="${numCols.includes(i)?'num':''}">${c}</th>`).join("")}</tr></thead>
+  <tbody>${rows.map(r=>`<tr>${r.map((v,i)=>`<td class="${numCols.includes(i)?'num':''}">${v}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;}
+renderMonths();loadDRE();
+</script></body></html>
