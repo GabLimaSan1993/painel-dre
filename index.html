@@ -175,9 +175,10 @@ const LINHAS=[
  {lbl:"(=) Receita Líquida",calc:d=>d.receita_bruta-ded(d)+(d.credito_impostos||0),cls:"r-sub"},
  {lbl:"(−) CMV",tipo:"cmv",calc:d=>-d.cmv,cls:"r-neg"},
  {lbl:"(=) Lucro Bruto",calc:d=>d.lucro_bruto_ajustado,cls:"r-sub"},
- {lbl:"(−) Custos Operacionais",calc:d=>-((d.frete||0)+(d.folha||0)),cls:"r-grouphdr"},
+ {lbl:"(−) Custos Operacionais",calc:d=>-((d.frete||0)+(d.folha||0)+(d.aluguel||0)),cls:"r-grouphdr"},
  {lbl:"Frete",tipo:"frete",calc:d=>-(d.frete||0),cls:"r-subitem"},
  {lbl:"Folha",tipo:"folha",calc:d=>-(d.folha||0),cls:"r-subitem"},
+ {lbl:"Aluguel",tipo:"aluguel",calc:d=>-(d.aluguel||0),cls:"r-subitem"},
  {lbl:"(=) Lucro Operacional",calc:d=>d.lucro_operacional,cls:"r-total"},
  {lbl:"Margem Operacional %",calc:d=>d.receita_bruta?d.lucro_operacional/d.receita_bruta*100:0,cls:"r-memo",pct:1},
  {lbl:"ICMS a Recuperar (fora do resultado)",calc:d=>d.icms_a_recuperar,cls:"r-memo"},
@@ -261,6 +262,12 @@ async function abrir(tipo,mes){
       det.innerHTML=panel("Folha rateada por funcionário · "+mnome,sub,
         tabela(["Nome","Empresa","Vínculo","Cargo","Setor","Folha rateada"],
           r.map(x=>[x.nome,x.empresa,x.tipo,x.cargo,x.setor,fmt(x.folha_rateada)]),[5]));
+    } else if(tipo==="aluguel"){
+      const r=await api(`v_aluguel_detalhe?ano=eq.2026&mes=eq.${mes}&select=empresa,fornecedor,criterio,perc_shopee,valor,valor_operacao&order=valor_operacao.desc`);
+      const crit=x=>x.criterio==="PESO"?"Peso da operação":(Number(x.perc_shopee)===1?"100% Shopee":Number(x.perc_shopee)===0?"100% Mercado Livre":(Number(x.perc_shopee)*100).toFixed(0)+"% Shopee (2 galpões)");
+      det.innerHTML=panel("Aluguel por imóvel · "+mnome,`${r.length} contratos · cada um pelo seu critério · soma = aluguel da operação`,
+        tabela(["Empresa","Imóvel / Fornecedor","Critério","Valor total","Parte Shopee"],
+          r.map(x=>[x.empresa,x.fornecedor,crit(x),fmt(x.valor),fmt(x.valor_operacao)]),[3,4]));
     } else if(tipo==="frete"){
       const r=await api(`v_frete_detalhe?ano=eq.2026&mes=eq.${mes}&select=estado,produto,valor_frete&order=valor_frete.desc`);
       const sub=cnpjSel==="TODOS"?`${r.length} trechos (rateio por peso) · total ancorado no frete contábil`:"Frete rateado por peso · o cartão mostra a parte desta unidade";
