@@ -141,7 +141,7 @@ const ent=v=>(Math.round(Number(v)||0)).toLocaleString("pt-BR");
 const fmt=v=>"R$ "+(Number(v)||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2});
 const n2=v=>(Number(v)||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2});
 const enc=encodeURIComponent;
-const ded=d=>(d.icms||0)+(d.pis||0)+(d.cofins||0);
+const ded=d=>(d.icms||0)+(d.pis||0)+(d.cofins||0)+(d.ipi||0);
 async function api(path){
   const r=await fetch(URL+"/rest/v1/"+path,{headers:{apikey:KEY,Authorization:"Bearer "+(TOKEN||KEY)}});
   if(r.status===401){logout();throw new Error("Sessão expirada — faça login de novo.");}
@@ -211,20 +211,20 @@ async function abrir(tipo,mes){
   const F=fcnpj(), mnome=MESES.find(m=>m[1]===mes)[0]+"/2026";
   try{
     if(tipo==="receita"){
-      const r=await api(`v_venda_detalhe?ano=eq.2026&mes=eq.${mes}${F}&select=numero_nf,produto,cidade,quantidade,valor_unit,custo_unit,valor_total&order=valor_total.desc`);
-      det.innerHTML=panel("Receita — NFs de saída · "+mnome,`${r.length} notas`,
-        tabela(["NF","Produto","Cidade","Qtd","Vlr Unit","Custo Unit","Margem","Total"],
+      const r=await api(`v_venda_detalhe?ano=eq.2026&mes=eq.${mes}${F}&select=numero_nf,produto,cidade,quantidade,valor_unit,custo_unit,valor_total,vlr_ipi&order=valor_total.desc`);
+      det.innerHTML=panel("Receita — NFs de saída · "+mnome,`${r.length} notas · Total = valor da NF (mercadoria + IPI)`,
+        tabela(["NF","Produto","Cidade","Qtd","Vlr Unit","Custo Unit","Margem","Total NF"],
           r.map(x=>{const mg=x.valor_unit?((x.valor_unit-x.custo_unit)/x.valor_unit*100):0;
-            return [x.numero_nf,x.produto,x.cidade,n2(x.quantidade),fmt(x.valor_unit),fmt(x.custo_unit),mg.toFixed(1)+"%",fmt(x.valor_total)];}),
+            return [x.numero_nf,x.produto,x.cidade,n2(x.quantidade),fmt(x.valor_unit),fmt(x.custo_unit),mg.toFixed(1)+"%",fmt((Number(x.valor_total)||0)+(Number(x.vlr_ipi)||0))];}),
           [3,4,5,6,7]));
     } else if(tipo==="impostos"){
-      const r=await api(`v_venda_detalhe?ano=eq.2026&mes=eq.${mes}${F}&select=numero_nf,produto,vlr_icms,vlr_pis,vlr_cofins&order=numero_nf`);
-      det.innerHTML=panel("Impostos deduzidos por nota · "+mnome,"ICMS + PIS + COFINS",
-        tabela(["NF","Produto","ICMS","PIS","COFINS"],r.map(x=>[x.numero_nf,x.produto,fmt(x.vlr_icms),fmt(x.vlr_pis),fmt(x.vlr_cofins)]),[2,3,4]));
+      const r=await api(`v_venda_detalhe?ano=eq.2026&mes=eq.${mes}${F}&select=numero_nf,produto,vlr_icms,vlr_pis,vlr_cofins,vlr_ipi&order=numero_nf`);
+      det.innerHTML=panel("Impostos deduzidos por nota · "+mnome,"ICMS + PIS + COFINS + IPI",
+        tabela(["NF","Produto","ICMS","PIS","COFINS","IPI"],r.map(x=>[x.numero_nf,x.produto,fmt(x.vlr_icms),fmt(x.vlr_pis),fmt(x.vlr_cofins),fmt(x.vlr_ipi)]),[2,3,4,5]));
     } else if(tipo==="credito"){
       const view=cnpjSel==="TODOS"?"v_credito_detalhe":"v_credito_cnpj";
       const r=await api(`${view}?ano=eq.2026&mes=eq.${mes}${F}&select=insumo,credito_alocado&order=credito_alocado.desc`);
-      det.innerHTML=panel("Crédito de impostos por insumo · "+mnome,"PIS + COFINS · proporcional ao consumo",
+      det.innerHTML=panel("Crédito de impostos por insumo · "+mnome,"PIS + COFINS + IPI · proporcional ao consumo",
         tabela(["Insumo","Crédito alocado"],r.map(x=>[x.insumo,fmt(x.credito_alocado)]),[1]));
     } else if(tipo==="cmv"){
       const cview=cnpjSel==="TODOS"?"v_consumo_prd":"v_consumo_cnpj";
