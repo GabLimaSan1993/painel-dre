@@ -43,6 +43,7 @@ table.dre tbody td{border-bottom:1px solid rgba(54,69,79,.4)}
 td.click{cursor:pointer;border-radius:6px}
 td.click:hover{background:rgba(226,165,38,.12);color:var(--gold-soft)}
 .hint{color:var(--gold);font-size:10px;opacity:.7;margin-left:4px}
+.est{color:var(--neg);font-weight:700;margin-left:2px}
 .cap{color:var(--muted);font-size:11px;margin:10px 4px 0;text-transform:uppercase;letter-spacing:.08em}
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:22px;margin-top:18px}
 .panel h3{font-family:var(--fdisplay);font-size:18px;margin-bottom:4px}
@@ -57,6 +58,7 @@ td.click:hover{background:rgba(226,165,38,.12);color:var(--gold-soft)}
 .r-subitem td.acc{padding-left:34px}
 .scroll{max-height:380px;overflow:auto}
 .loading{color:var(--muted);padding:20px;text-align:center}
+.est{color:var(--neg);font-weight:700;margin-left:2px}
 .sec-title{color:var(--gold);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;margin:18px 0 8px}
 .tabs{display:flex;gap:6px;margin-bottom:6px;border-bottom:1px solid var(--line)}
 .tab{background:none;border:none;color:var(--muted);font-family:var(--fdisplay);font-weight:600;font-size:15px;padding:12px 18px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
@@ -100,7 +102,7 @@ td.click:hover{background:rgba(226,165,38,.12);color:var(--gold-soft)}
   </div>
 </div>
 <div id="dre"></div>
-<div class="cap">Valores em R$ · 2026</div>
+<div class="cap">Valores em R$ · 2026 &nbsp;·&nbsp; <span class="est">*</span> frete estimado (média Jan–Abr, aguardando fechamento contábil)</div>
 <div id="detalhe"></div>
 </div>
 <div id="view-mapa" style="display:none">
@@ -184,8 +186,10 @@ async function loadDRE(){
   const view=cnpjSel==="TODOS"?"v_dre_operacao":"v_dre_cnpj";
   const rows=await api(`${view}?ano=eq.2026${fcnpj()}&order=mes`);
   const mapa={}; rows.forEach(r=>mapa[r.mes]=r);
+  let estMeses={};
+  try{(await api("fabrica_mensal?ano=eq.2026&select=mes,frete_estimado")).forEach(x=>{estMeses[x.mes]=x.frete_estimado;});}catch(e){}
   let h='<div class="tablewrap"><table class="dre"><thead><tr><th class="acc">Conta</th>'+
-    MESES.map(([n])=>`<th class="num">${n}/26</th>`).join("")+'</tr></thead><tbody>';
+    MESES.map(([n,num])=>`<th class="num">${n}/26${estMeses[num]?'<span class="est">*</span>':''}</th>`).join("")+'</tr></thead><tbody>';
   LINHAS.forEach(L=>{
     h+=`<tr class="${L.cls}"><td class="acc">${L.lbl}${L.tipo?'<span class="hint">▾</span>':''}</td>`;
     MESES.forEach(([n,num])=>{
@@ -252,7 +256,7 @@ async function abrir(tipo,mes){
         +tabela(["NF","Fornecedor","Insumo","Qtd","Valor","Custo/un"],e.map(x=>[x.numero_nf,x.fornecedor,x.insumo,n2(x.quantidade),fmt(x.valor_total),fmt(x.custo_unit)]),[3,4,5])+'</div>';
     } else if(tipo==="frete"){
       const r=await api(`v_frete_detalhe?ano=eq.2026&mes=eq.${mes}&select=estado,produto,valor_frete&order=valor_frete.desc`);
-      const sub=cnpjSel==="TODOS"?`${r.length} trechos (por estado/produto)`:"Frete total da operação por estado/produto · o cartão mostra a parte rateada desta unidade";
+      const sub=cnpjSel==="TODOS"?`${r.length} trechos (rateio por peso) · total ancorado no frete contábil`:"Frete rateado por peso · o cartão mostra a parte desta unidade";
       det.innerHTML=panel("Frete · "+mnome,sub,
         tabela(["Estado","Produto","Frete"],r.map(x=>[x.estado,x.produto,fmt(x.valor_frete)]),[2]));
     }
