@@ -102,7 +102,7 @@ td.click:hover{background:rgba(226,165,38,.12);color:var(--gold-soft)}
   </div>
 </div>
 <div id="dre"></div>
-<div class="cap">Valores em R$ · 2026 &nbsp;·&nbsp; <span class="est">*</span> frete estimado (média Jan–Abr, aguardando fechamento contábil)</div>
+<div class="cap">Valores em R$ · 2026 &nbsp;·&nbsp; <span class="est">*</span> contém valor estimado/replicado (aguardando fechamento contábil)</div>
 <div id="detalhe"></div>
 </div>
 <div id="view-mapa" style="display:none">
@@ -175,8 +175,9 @@ const LINHAS=[
  {lbl:"(=) Receita Líquida",calc:d=>d.receita_bruta-ded(d)+(d.credito_impostos||0),cls:"r-sub"},
  {lbl:"(−) CMV",tipo:"cmv",calc:d=>-d.cmv,cls:"r-neg"},
  {lbl:"(=) Lucro Bruto",calc:d=>d.lucro_bruto_ajustado,cls:"r-sub"},
- {lbl:"(−) Custos Operacionais",calc:d=>-(d.frete||0),cls:"r-grouphdr"},
+ {lbl:"(−) Custos Operacionais",calc:d=>-((d.frete||0)+(d.folha||0)),cls:"r-grouphdr"},
  {lbl:"Frete",tipo:"frete",calc:d=>-(d.frete||0),cls:"r-subitem"},
+ {lbl:"Folha",calc:d=>-(d.folha||0),cls:"r-subitem"},
  {lbl:"(=) Lucro Operacional",calc:d=>d.lucro_operacional,cls:"r-total"},
  {lbl:"Margem Operacional %",calc:d=>d.receita_bruta?d.lucro_operacional/d.receita_bruta*100:0,cls:"r-memo",pct:1},
  {lbl:"ICMS a Recuperar (fora do resultado)",calc:d=>d.icms_a_recuperar,cls:"r-memo"},
@@ -187,7 +188,7 @@ async function loadDRE(){
   const rows=await api(`${view}?ano=eq.2026${fcnpj()}&order=mes`);
   const mapa={}; rows.forEach(r=>mapa[r.mes]=r);
   let estMeses={};
-  try{(await api("fabrica_mensal?ano=eq.2026&select=mes,frete_estimado")).forEach(x=>{estMeses[x.mes]=x.frete_estimado;});}catch(e){}
+  try{(await api("fabrica_mensal?ano=eq.2026&select=mes,frete_estimado,folha_estimado")).forEach(x=>{estMeses[x.mes]=x.frete_estimado||x.folha_estimado;});}catch(e){}
   let h='<div class="tablewrap"><table class="dre"><thead><tr><th class="acc">Conta</th>'+
     MESES.map(([n,num])=>`<th class="num">${n}/26${estMeses[num]?'<span class="est">*</span>':''}</th>`).join("")+'</tr></thead><tbody>';
   LINHAS.forEach(L=>{
