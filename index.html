@@ -278,7 +278,7 @@ async function abrir(tipo,mes){
           r.map(x=>[x.empresa,x.fornecedor,crit(x),fmt(x.valor),fmt(x.valor_operacao)]),[3,4]));
     } else if(tipo==="demais"){
       const r=await api(`v_despesa_demais_detalhe?ano=eq.2026&mes=eq.${mes}&order=ordem,valor_operacao.desc`);
-      det.innerHTML=panel("Demais Despesas Operacionais · "+mnome,"Composição do contábil (Adm+Vendas, sem depreciação) rateada por peso · linhas (−) já aparecem acima e são abatidas",
+      det.innerHTML=panel("Demais Despesas Operacionais · "+mnome,"Composição do contábil (Adm+Vendas, sem depreciação) rateada por peso · folha (só encargos), aluguel e energia já estão nas linhas acima",
         tabela(["Categoria","Valor grupo","Parte Shopee"],
           r.map(x=>[x.categoria,fmt(x.valor),fmt(x.valor_operacao)]),[1,2]));
     } else if(tipo==="frete"){
